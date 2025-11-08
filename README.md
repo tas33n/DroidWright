@@ -1,6 +1,6 @@
 <div align="center">
 
-![DroidWright Banner](assets/droidwright-banner.jpg)
+![DroidWright Banner](droidwright-banner.jpg)
 
 **Powerful, flexible automation for Android - right on your device**
 
@@ -11,8 +11,6 @@
 </div>
 
 ---
-
-> **Note:** This repository currently hosts placeholder assets only. The full DroidWright source code will be published soon; for now this space is being used as a placeholder and for bug tracking.
 
 ## Why We Built This
 
@@ -95,7 +93,7 @@ Download the latest release APK from the [Releases](https://github.com/tas33n/dr
    - Open the app
    - Go to Scripts tab
    - Tap the "+" button
-   - Write your automation script (see [docs.md](docs.md) for detailed guide)
+   - Write your automation script (see [Docs.md](Docs.md) for detailed guide)
 
 4. **Run Your Script**:
    - Tap the play button on your script
@@ -104,19 +102,29 @@ Download the latest release APK from the [Releases](https://github.com/tas33n/dr
 
 ## 📖 Documentation
 
-- **[docs.md](docs.md)**: Complete guide to writing automation scripts
-- **[API Reference](docs.md#api-reference)**: All available APIs and methods
+- **[Docs.md](Docs.md)**: Complete guide to writing automation scripts
+- **[API Reference](Docs.md#api-reference)**: All available APIs and methods
 - **[Examples](examples/)**: Sample scripts for common tasks
 
 ## 💡 Example Script
 
 ```javascript
-function run(ctx) {
+// ==DroidScript==
+// @id              quick-demo
+// @name            Quick Demo Script
+// @description     Launch Instagram, scroll, and like a post.
+// @author          tas33n
+// @version         1.0.0
+// @targetApp       com.instagram.android
+// @url             https://github.com/tas33n/droidwright
+// @created         2024-11-08
+// ==/DroidScript==
+
+function droidRun(ctx) {
   log("Starting Instagram automation");
-  
-  // Launch Instagram
-  const TARGET_APP = "com.instagram.android";
-  ctx.app.launch(TARGET_APP);
+
+  const targetPackage = typeof targetApp === "string" ? targetApp : "com.instagram.android";
+  ctx.app.launch(targetPackage);
   ctx.device.sleep(3000);
   
   // Wait for feed to load
@@ -176,7 +184,7 @@ function run(ctx) {
 ### Import Issues
 - Ensure script file is valid JavaScript
 - Check file encoding (UTF-8 recommended)
-- Verify script has a `run(ctx)` function
+- Verify script has a `droidRun(ctx)` function
 
 ## 🤝 Contributing
 
@@ -252,7 +260,7 @@ We're always happy to help and hear from the community!
 
 ## 📚 Resources
 
-- [Script Writing Guide](docs.md)
+- [Script Writing Guide](Docs.md)
 - [Android Developers](https://developer.android.com)
 - [Jetpack Compose Documentation](https://developer.android.com/jetpack/compose)
 - [Material Design 3](https://m3.material.io)
