@@ -15,12 +15,12 @@ Complete guide to writing automation scripts for DroidWright.
 
 ## Introduction
 
-DroidWright scripts are written in JavaScript and executed in a QuickJS runtime. Each script must define a `run(ctx)` function that receives a context object with all available APIs.
+DroidWright scripts are written in JavaScript and executed in a QuickJS runtime. Each script must define a `droidRun(ctx)` function that receives a context object with all available APIs.
 
 ### Basic Script Template
 
 ```javascript
-function run(ctx) {
+function droidRun(ctx) {
   // Your automation code here
   log("Script started");
   
@@ -33,10 +33,10 @@ function run(ctx) {
 
 ### Required Function
 
-Every script **must** export a `run(ctx)` function:
+Every script **must** export a `droidRun(ctx)` function:
 
 ```javascript
-function run(ctx) {
+function droidRun(ctx) {
   // ctx contains all APIs:
   // - ctx.app: App control API
   // - ctx.device: Device control API
@@ -50,7 +50,7 @@ function run(ctx) {
 
 ### Return Value
 
-The `run()` function should return an object with:
+The `droidRun()` function should return an object with:
 - `status`: `"ok"` for success, `"error"` for failure
 - `note`: Optional message describing the result
 
@@ -65,7 +65,7 @@ return { status: "error", note: "Failed to find element" };
 **Important**: You must define package names directly in your script. There is no profile system - keep it simple!
 
 ```javascript
-function run(ctx) {
+function droidRun(ctx) {
   // Define your target app directly
   const TARGET_APP = "com.instagram.android";
   
@@ -473,7 +473,7 @@ if (ctx.ui.waitFor({ text: "Feed" }, 5000)) {
 ### 3. Handle Errors
 
 ```javascript
-function run(ctx) {
+function droidRun(ctx) {
   try {
     ctx.app.launch("com.instagram.android");
     ctx.device.sleep(3000);
@@ -580,7 +580,7 @@ All example scripts are available in the [`examples/`](examples/) directory. You
 Here's a simple example to get you started:
 
 ```javascript
-function run(ctx) {
+function droidRun(ctx) {
   log("Starting automation");
   
   // Launch app
@@ -689,7 +689,7 @@ ctx.device.sleep(3000); // Important: wait after swipe
 
 **Solutions**:
 1. Ensure file is valid JavaScript
-2. Check that `run(ctx)` function exists
+2. Check that `droidRun(ctx)` function exists
 3. Verify file encoding (UTF-8)
 4. Check file extension (.js)
 
@@ -783,7 +783,7 @@ ctx.ui.waitForIdle(2000); // Not needed
 #### 1. Use Logging Extensively
 
 ```javascript
-function run(ctx) {
+function droidRun(ctx) {
   log("=== Script Started ===");
   log(`Screen size: ${JSON.stringify(ctx.device.getScreenSize())}`);
   log(`Current app: ${ctx.app.getPackageName()}`);
