@@ -12,6 +12,8 @@
 
 ---
 
+> **Note:** This repository currently hosts placeholder assets only. The full DroidWright source code will be published soon; for now this space is being used as a placeholder and for bug tracking.
+
 ## Why We Built This
 
 Let's be honest - most automation apps on the Play Store are pretty limited. They give you basic click-and-swipe actions with rigid templates, but when you need real control and flexibility, they fall short. That's why we built DroidWright.
