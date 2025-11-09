@@ -1,6 +1,6 @@
 <div align="center">
 
-![DroidWright Banner](droidwright-banner.jpg)
+![DroidWright Banner](assets/droidwright-banner.jpg)
 
 **Powerful, flexible automation for Android - right on your device**
 
