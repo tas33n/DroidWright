@@ -10,7 +10,10 @@
 package com.tas33n.droidwright.domain.api
 
 import android.content.ClipboardManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
 import android.util.DisplayMetrics
@@ -52,6 +55,8 @@ interface AppApi {
     fun launch(packageName: String): Boolean
     fun close(packageName: String): Boolean
     fun getPackageName(): String?
+    fun openUri(uri: String): Boolean
+    fun launchActivity(options: Map<String, Any?>): Boolean
 }
 
 interface UiApi {
@@ -221,6 +226,17 @@ fun createDroidWrightApi(
 
             override fun getPackageName(): String? {
                 return AutomationAccessibilityService.getInstance()?.rootInActiveWindow?.packageName?.toString()
+            }
+
+            override fun openUri(uri: String): Boolean {
+                engine.log(LogLevel.INFO, "app.openUri($uri)")
+                return launchActivity(mapOf("action" to Intent.ACTION_VIEW, "uri" to uri))
+            }
+
+            override fun launchActivity(options: Map<String, Any?>): Boolean {
+                engine.log(LogLevel.INFO, "app.launchActivity($options)")
+                val service = AutomationAccessibilityService.getInstance() ?: return false
+                return service.launchActivity(buildIntent(options))
             }
         }
 
@@ -594,6 +610,8 @@ fun QuickJs.installDroidWrightBindings(
                     "app.launch" -> api.app.launch(payload.requireString("packageName"))
                     "app.close" -> api.app.close(payload.requireString("packageName"))
                     "app.getPackageName" -> api.app.getPackageName()
+                    "app.openUri" -> api.app.openUri(payload.requireString("uri"))
+                    "app.launchActivity" -> api.app.launchActivity(payload.getMap("options"))
 
                     "ui.tap" -> api.ui.tap(payload.requireSelector())
                     "ui.longTap" -> api.ui.longTap(payload.requireSelector())
@@ -742,6 +760,60 @@ private fun Map<String, Any?>.getMap(key: String): Map<String, Any?> {
     throw IllegalArgumentException("Expected '$key' to be an object")
 }
 
+private fun buildIntent(options: Map<String, Any?>): Intent = Intent().apply {
+    val action = options["action"] as? String
+    val uriStr = (options["uri"] ?: options["data"]) as? String
+    val type = options["type"] as? String
+    val packageName = options["package"] as? String
+    val component = options["component"] as? String
+
+    if (action != null) {
+        setAction(action)
+    }
+
+    val uri = uriStr?.let { Uri.parse(it) }
+    if (uri != null && type != null) {
+        setDataAndType(uri, type)
+    } else if (uri != null) {
+        data = uri
+    } else if (type != null) {
+        setType(type)
+    }
+
+    if (packageName != null) {
+        setPackage(packageName)
+    }
+    if (component != null) {
+        ComponentName.unflattenFromString(component)?.let {
+            setComponent(it)
+        }
+    }
+
+    (options["categories"] as? List<*>)?.filterIsInstance<String>()?.forEach {
+        addCategory(it)
+    }
+
+    val extras = options["extras"] as? Map<*, *>
+    extras?.forEach { (key, value) ->
+        val k = key.toString()
+        when (value) {
+            is String -> putExtra(k, value)
+            is Boolean -> putExtra(k, value)
+            is Int -> putExtra(k, value)
+            is Long -> putExtra(k, value)
+            is Float -> putExtra(k, value)
+            is Double -> {
+                if (value % 1.0 == 0.0 && value in Int.MIN_VALUE.toDouble()..Int.MAX_VALUE.toDouble()) {
+                    putExtra(k, value.toInt())
+                } else {
+                    putExtra(k, value)
+                }
+            }
+            else -> if (value != null) putExtra(k, value.toString())
+        }
+    }
+}
+
 private fun buildBootstrapScript(): String {
     return """
         (function (global) {
@@ -762,7 +834,9 @@ private fun buildBootstrapScript(): String {
             app: {
               launch: packageName => __call("app.launch", { packageName }),
               close: packageName => __call("app.close", { packageName }),
-              getPackageName: () => __call("app.getPackageName")
+              getPackageName: () => __call("app.getPackageName"),
+              openUri: uri => __call("app.openUri", { uri }),
+              launchActivity: options => __call("app.launchActivity", { options: options || {} })
             },
             device: {
               press: key => __call("device.press", { key }),
