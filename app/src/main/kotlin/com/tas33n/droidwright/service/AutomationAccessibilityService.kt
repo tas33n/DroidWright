@@ -449,12 +449,20 @@ class AutomationAccessibilityService : AccessibilityService() {
         }
     }
 
+    fun launchActivity(intent: Intent): Boolean {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return try {
+            startActivity(intent)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch activity", e)
+            false
+        }
+    }
+
     fun launchApp(packageName: String): Boolean {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        } ?: return false
-        startActivity(intent)
-        return true
+        val intent = packageManager.getLaunchIntentForPackage(packageName) ?: return false
+        return launchActivity(intent)
     }
 
     fun pressBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)

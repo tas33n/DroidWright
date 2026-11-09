@@ -398,6 +398,52 @@ const currentApp = ctx.app.getPackageName();
 log(`Current app: ${currentApp}`);
 ```
 
+#### `app.openUri(uri: string): boolean`
+
+Opens a URI or deep link using Android's `ACTION_VIEW` intent (e.g., Obsidian note URLs, web links, custom app schemes).
+
+```javascript
+// Open or create a note in Obsidian
+ctx.app.openUri("obsidian://new?vault=MyVault&name=NewNote&content=Hello%20World");
+
+// Open a web page in browser
+ctx.app.openUri("https://example.com");
+
+// Open a location in Maps
+ctx.app.openUri("geo:37.7749,-122.4194");
+```
+
+#### `app.launchActivity(options: object): boolean`
+
+Launches an Android Activity with custom Intent options (action, URI, package, MIME type, categories, and extras).
+
+**Options**:
+- `action` (optional, string): Android Intent action (e.g. `"android.intent.action.VIEW"`, `"android.intent.action.SEND"`).
+- `uri` or `data` (optional, string): Data URI for the intent.
+- `type` (optional, string): Explicit MIME type (e.g. `"text/plain"`).
+- `package` (optional, string): Target package name.
+- `component` (optional, string): Component identifier (e.g. `"com.example/.MainActivity"`).
+- `categories` (optional, string[]): List of intent categories.
+- `extras` (optional, object): Key-value pairs for Intent extras (supports strings, numbers, booleans).
+
+```javascript
+// Share text to an app
+ctx.app.launchActivity({
+  action: "android.intent.action.SEND",
+  type: "text/plain",
+  extras: {
+    "android.intent.extra.TEXT": "Hello from DroidWright!"
+  }
+});
+
+// Explicitly target Obsidian
+ctx.app.launchActivity({
+  action: "android.intent.action.VIEW",
+  package: "md.obsidian",
+  uri: "obsidian://new?vault=MyVault&name=Note"
+});
+```
+
 ### Device API (`ctx.device`)
 
 Control device-level operations.
