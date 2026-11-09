@@ -32,6 +32,25 @@ function droidRun(ctx) {
 
 ## Script Structure
 
+### Required Metadata Headers
+
+Every script must begin with DroidScript metadata headers in Tampermonkey-style format:
+
+```javascript
+// ==DroidScript==
+// @id              unique-script-id
+// @name            Script Display Name
+// @description     Brief description of what this script does
+// @author          Your Name
+// @version         1.0.0
+// @targetApp       com.example.app
+// @url             https://github.com/your/repo
+// @created         2026-01-01
+// ==/DroidScript==
+```
+
+The aforementioned metadata fields are all required.
+
 ### Required Function
 
 Every script **must** export a `droidRun(ctx)` function:
