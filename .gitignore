@@ -103,6 +103,7 @@ Thumbs.db
 
 # Package Files (excluding gradle wrapper)
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.nar
 *.ear
