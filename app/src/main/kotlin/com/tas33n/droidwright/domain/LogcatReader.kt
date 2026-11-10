@@ -9,13 +9,13 @@
  */
 package com.tas33n.droidwright.domain
 
+import android.os.Build
 import android.util.Log
 import com.tas33n.droidwright.data.models.LogEntry
 import com.tas33n.droidwright.data.models.LogLevel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,7 +69,7 @@ object LogcatReader {
                     val MAX_BUFFER_SIZE = 50 // Max logs before forced update
                     
                     try {
-                        while (isActive && process?.isAlive == true) {
+                        while (isActive && isProcessAlive(process)) {
                             try {
                                 // Check if data is available (non-blocking check)
                                 val available = inputStream.available()
@@ -165,12 +165,15 @@ object LogcatReader {
         withContext(Dispatchers.IO) {
             try {
                 val clearProcess = Runtime.getRuntime().exec("logcat -c")
-                val finished = clearProcess.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)
-                if (!finished && clearProcess.isAlive) {
-                    clearProcess.destroyForcibly()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val finished = clearProcess.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)
+                    if (!finished && isProcessAlive(clearProcess)) {
+                        clearProcess.destroyForcibly()
+                    }
                 } else {
-                    // Process finished normally
+                    clearProcess.waitFor()
                 }
+                Unit
             } catch (e: Exception) {
                 Log.e(TAG, "Error clearing logcat", e)
             }
@@ -213,6 +216,16 @@ object LogcatReader {
     
     fun getAllLogs(): List<LogEntry> {
         return _logcatLogs.value
+    }
+
+    private fun isProcessAlive(p: Process?): Boolean {
+        if (p == null) return false
+        return try {
+            p.exitValue()
+            false
+        } catch (e: IllegalThreadStateException) {
+            true
+        }
     }
 }
 
