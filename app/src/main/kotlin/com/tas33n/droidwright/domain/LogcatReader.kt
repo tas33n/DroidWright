@@ -9,6 +9,7 @@
  */
 package com.tas33n.droidwright.domain
 
+import android.os.Build
 import android.util.Log
 import com.tas33n.droidwright.data.models.LogEntry
 import com.tas33n.droidwright.data.models.LogLevel
@@ -45,13 +46,12 @@ object LogcatReader {
     suspend fun startReading(packageName: String = "com.tas33n.droidwright") {
         // Stop any existing reading
         stopReading()
-        
+
+        _logcatLogs.value = readHistory(packageName)
+
         readingJob = scope.launch {
             try {
                 coroutineScope {
-                    // Clear existing logs first
-                    clearLogcat()
-                    
                     // Start logcat process filtering by package name
                     process = Runtime.getRuntime().exec(
                         arrayOf(
@@ -159,6 +159,34 @@ object LogcatReader {
     
     fun clearLogs() {
         _logcatLogs.value = emptyList()
+        scope.launch { clearLogcat() }
+    }
+
+    private suspend fun readHistory(packageName: String): List<LogEntry> = withContext(Dispatchers.IO) {
+        try {
+            val dumpProcess = Runtime.getRuntime().exec(
+                arrayOf(
+                    "logcat",
+                    "-d",
+                    "-v", "time",
+                    "-s", "${packageName}:*", "AndroidRuntime:*", "System.err:*"
+                )
+            )
+            val lines = dumpProcess.inputStream
+                ?.use { stream -> BufferedReader(InputStreamReader(stream)).readLines() }
+                ?: emptyList()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!dumpProcess.waitFor(2, java.util.concurrent.TimeUnit.SECONDS) && dumpProcess.isAlive) {
+                    dumpProcess.destroyForcibly()
+                }
+            } else {
+                dumpProcess.waitFor()
+            }
+            lines.mapNotNull { line -> if (line.isNotBlank()) parseLogLine(line) else null }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading logcat history", e)
+            emptyList()
+        }
     }
     
     private suspend fun clearLogcat() {

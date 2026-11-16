@@ -537,7 +537,8 @@ private data class BridgeResponse(
 fun QuickJs.installDroidWrightBindings(
     engine: UIAutomatorEngine,
     api: DroidWrightApi,
-    appContext: Context
+    appContext: Context,
+    intentPayload: Map<String, Any?>? = null
 ) {
     val gson = Gson()
     val payloadType = object : TypeToken<Map<String, Any?>>() {}.type
@@ -644,6 +645,16 @@ fun QuickJs.installDroidWrightBindings(
     }
 
     set("droid", DroidWrightBridge::class.java, bridge)
+    // Make the triggering intent (share sheet, SENDTO link, ...) available to
+    // scripts as ctx.intent / globalThis.intent before they run.
+    // The JSON is embedded directly as a JS object literal (valid JS since
+    // ES2019), except for U+2028/U+2029, which are line terminators in JS
+    // source but raw characters in JSON, so they get pre-escaped.
+    val intentJson = intentPayload?.let { gson.toJson(it) }
+        ?.replace(" ", "\\u2028")
+        ?.replace(" ", "\\u2029")
+        ?: "null"
+    evaluate("globalThis.__droidIntentPayload = $intentJson;", "droidwright-intent.js")
     evaluate(buildBootstrapScript(), "droidwright-bootstrap.js")
 }
 
@@ -759,6 +770,7 @@ private fun buildBootstrapScript(): String {
           };
 
           const ctx = {
+            intent: global.__droidIntentPayload || null,
             app: {
               launch: packageName => __call("app.launch", { packageName }),
               close: packageName => __call("app.close", { packageName }),
@@ -799,6 +811,7 @@ private fun buildBootstrapScript(): String {
           };
 
           global.ctx = ctx;
+          global.intent = ctx.intent;
           global.app = ctx.app;
           global.device = ctx.device;
           global.ui = ctx.ui;

@@ -116,6 +116,18 @@ This directory contains example automation scripts that demonstrate various feat
 
 **Usage**: Adapt for any "scroll until found" scenario.
 
+---
+
+### 09_share_intent_demo.js
+**Purpose**: Demo of receiving content shared from other apps
+
+**Features**:
+- Trigger headers (`@match`, `@include`) for share routing
+- `ctx.intent` payload inspection (url, text, subject, extras)
+- Copies the shared URL to the clipboard
+
+**Usage**: Share any link or text to DroidWright from another app and watch the logs.
+
 ## Tips
 
 - **Modify Package Names**: Replace example package names with your target apps

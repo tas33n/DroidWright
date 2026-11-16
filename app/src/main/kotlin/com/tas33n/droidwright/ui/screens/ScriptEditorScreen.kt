@@ -74,7 +74,7 @@ fun ScriptEditorScreen(
     }
 
     val metadata = remember(code) { ScriptMetadataParser.parse(code) }
-    val scriptTitle = metadata["name"]?.takeIf { it.isNotBlank() }
+    val scriptTitle = metadata.name?.takeIf { it.isNotBlank() }
         ?: if (draft.id == null) "New Script" else "Unnamed Script"
 
     if (showDiscardDialog) {

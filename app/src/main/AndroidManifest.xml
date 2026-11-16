@@ -53,6 +53,26 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ShareReceiverActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.UIAutomatorApp.ShareReceiver">
+            <intent-filter android:label="Run with DroidWright">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/html" />
+            </intent-filter>
+            <intent-filter android:label="Run with DroidWright">
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".service.AutomationAccessibilityService"
             android:exported="false"

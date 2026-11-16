@@ -7,12 +7,13 @@ Complete guide to writing automation scripts for DroidWright.
 1. [Introduction](#introduction)
 2. [Script Structure](#script-structure)
 3. [Defining Target Apps](#defining-target-apps)
-4. [Finding UI Elements](#finding-ui-elements)
-5. [API Reference](#api-reference)
-6. [Selectors](#selectors)
-7. [Best Practices](#best-practices)
-8. [Examples](#examples)
-9. [Troubleshooting](#troubleshooting)
+4. [Receiving Shared Content](#receiving-shared-content)
+5. [Finding UI Elements](#finding-ui-elements)
+6. [API Reference](#api-reference)
+7. [Selectors](#selectors)
+8. [Best Practices](#best-practices)
+9. [Examples](#examples)
+10. [Troubleshooting](#troubleshooting)
 
 ## Introduction
 
@@ -81,6 +82,61 @@ function droidRun(ctx) {
 ```
 
 Simply define the package name as a constant at the top of your script and use it throughout.
+
+## Receiving Shared Content
+
+DroidWright appears in the Android share menu. Script execution from a share is opt-in per script, driven by trigger headers written in the same style as userscripts (Greasemonkey/Tampermonkey):
+
+```javascript
+// ==DroidScript==
+// @id              bookmarks-to-note
+// @name            Shared link to note
+// @description     Receives shared URLs, e.g. from the browser
+// @author          you
+// @version         1.0.0
+// @targetApp       *
+// @url             https://example.com
+// @created         2025-01-01
+// @match           *://*/*
+// @exclude         *mail.google.com*
+// ==/DroidScript==
+
+function droidRun(ctx) {
+  const shared = ctx.intent;
+  if (!shared || !shared.url) {
+    return { status: "error", note: "No URL in the shared content" };
+  }
+
+  log(`Received: ${shared.url}`);
+  return { status: "ok" };
+}
+```
+
+When you share content to DroidWright:
+
+1. Scripts whose trigger headers match the shared content run automatically
+2. If more than one script matches, DroidWright asks which one to run
+3. If nothing matches, a toast tells you so no scripts are started
+4. The shared content is available to every script as `ctx.intent`
+
+### Trigger Headers
+
+| Header     | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@match`   | URL pattern `scheme://host/path`, tested against the URL carried by the share (the first URL extracted when text + link are shared together). The scheme is `*` to match any scheme, or an exact scheme name; the host accepts `*` for every host and `*.example.com` for `example.com` plus its subdomains; the path is a glob. The fragment is ignored and a URL without a path is treated as having `/`; the query string is kept. Scheme and host are matched case-insensitively, the path case-sensitively. Never fires for text shares without a URL. |
+| `@include` | Glob pattern (`*` is the only wildcard) or `/regex/` over the raw shared content, whatever the share carries: plain text, link, or text + link combined. |
+| `@exclude` | Glob or `/regex/` veto over the same content as `@include`: whenever one matches, the script is not run even if a `@match`/`@include` did. |
+
+You can write each header multiple times; any hit routes the script unless an exclude vetoes it. Scripts without trigger headers never run from shares.
+
+```javascript
+// @match           *://*/*                       // any URL
+// @match           https://twitter.com/*          // exact host
+// @match           https://*.news.ycombinator.com/*  // subdomains
+// @include         *password reminder*            // glob over raw text
+// @include         /^https:\/\/(www\.)?reddit\.com\//  // regex form
+// @exclude         */blog/*                       // veto list
+```
 
 ## Finding UI Elements
 
@@ -396,6 +452,45 @@ Gets the package name of the currently active app.
 ```javascript
 const currentApp = ctx.app.getPackageName();
 log(`Current app: ${currentApp}`);
+```
+
+### Intent API (`ctx.intent`)
+
+When a script is triggered by received shared content, `ctx.intent` holds a snapshot of the Android Intent that triggered it. It is `null` when the script was started manually from DroidWright.
+
+`global.intent` is an alias for `ctx.intent`.
+
+The payload is populated according to the intent action that triggered the run:
+
+| Trigger                                    | Fields populated                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `ACTION_SEND` (text share)                 | `text` from `EXTRA_TEXT`, `subject` from `EXTRA_SUBJECT`, `url` from `EXTRA_STREAM` when present |
+| `ACTION_SENDTO` (link share)               | `url` from the intent data URI                                                                   |
+
+Every run also carries `action`, `mime`, `referrer`, and `extras`.
+When a share contains text + a link, the first URL inside `text` is extracted into `url`; fields the source app did not provide are `null`.
+
+> **Security Note:** Content received from the share sheet originates from external applications and should be treated as untrusted input. If your script navigates to shared URLs or inputs shared text into UI fields, validate the payload before acting on it.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `action` | `string \| null` | Android intent action, e.g. `"android.intent.action.SEND"` |
+| `mime` | `string \| null` | MIME type of the shared content, e.g. `"text/plain"` |
+| `text` | `string \| null` | Shared text (`EXTRA_TEXT`) |
+| `subject` | `string \| null` | Shared subject line (`EXTRA_SUBJECT`), when the source app provides one |
+| `url` | `string \| null` | First URL parsed out of the shared content; for link shares this is the shared link itself |
+| `referrer` | `string \| null` | Package name of the app that performed the share, when provided |
+| `extras` | `object` | Remaining scalar intent extras of the triggering intent, all values stringified |
+
+```javascript
+function droidRun(ctx) {
+  if (!ctx.intent) {
+    return { status: "ok", note: "Not started from a share" };
+  }
+  log(`share from ${ctx.intent.referrer}`);
+  log(`url: ${ctx.intent.url}`);
+  log(`text: ${ctx.intent.text}`);
+}
 ```
 
 ### Device API (`ctx.device`)
@@ -851,6 +946,10 @@ All example scripts are available in the [`examples/`](examples/) directory. You
 8. **[08_looping_with_conditions.js](examples/08_looping_with_conditions.js)**
    - Retry logic with conditions
    - Scroll and search pattern
+
+9. **[09_share_intent_demo.js](examples/09_share_intent_demo.js)**
+   - Receives content from the Android share menu
+   - Demonstrates `@match`/`@include` trigger headers and the `ctx.intent` payload
 
 ### Quick Example Preview
 
