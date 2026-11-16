@@ -21,6 +21,7 @@ import com.tas33n.droidwright.data.models.ScriptValidationResult
 import com.tas33n.droidwright.data.repository.PermissionRepository
 import com.tas33n.droidwright.data.repository.ScriptRepository
 import com.tas33n.droidwright.domain.UIAutomatorEngine
+import com.tas33n.droidwright.domain.ScriptMetadata
 import com.tas33n.droidwright.domain.ScriptMetadataParser
 import com.tas33n.droidwright.domain.ScriptTemplates
 import java.io.BufferedReader
@@ -97,8 +98,8 @@ class MainViewModel : ViewModel() {
 
             val script = AutomationScript(
                 id = scriptId,
-                name = metadata["name"]!!.trim(),
-                description = metadata["description"]!!.trim(),
+                name = metadata.name!!.trim(),
+                description = metadata.description!!.trim(),
                 code = draft.code,
                 tags = parsed.tags,
                 lastExecuted = existing?.lastExecuted ?: 0L,
@@ -138,8 +139,8 @@ class MainViewModel : ViewModel() {
                 val parsed = parseScriptMetadataOrThrow(content)
                 val script = AutomationScript(
                     id = ScriptRepository.nextScriptId(),
-                    name = parsed.metadata["name"]!!.trim(),
-                    description = parsed.metadata["description"]!!.trim(),
+                    name = parsed.metadata.name!!.trim(),
+                    description = parsed.metadata.description!!.trim(),
                     code = content,
                     tags = parsed.tags
                 )
@@ -167,8 +168,8 @@ class MainViewModel : ViewModel() {
                 val parsed = parseScriptMetadataOrThrow(content)
                 val script = AutomationScript(
                     id = ScriptRepository.nextScriptId(),
-                    name = parsed.metadata["name"]!!.trim(),
-                    description = parsed.metadata["description"]!!.trim(),
+                    name = parsed.metadata.name!!.trim(),
+                    description = parsed.metadata.description!!.trim(),
                     code = content,
                     tags = parsed.tags
                 )
@@ -290,18 +291,12 @@ class MainViewModel : ViewModel() {
     }
 
     private suspend fun markScriptRunning(scriptId: String, running: Boolean) {
-        val current = ScriptRepository.getScriptById(scriptId) ?: return
-        ScriptRepository.updateScript(current.copy(isRunning = running))
+        ScriptRepository.updateScriptRunningState(scriptId, running)
     }
 
     private suspend fun markScriptExecuted(scriptId: String) {
-        val current = ScriptRepository.getScriptById(scriptId) ?: return
-        ScriptRepository.updateScript(
-            current.copy(
-                lastExecuted = System.currentTimeMillis(),
-                isRunning = false
-            )
-        )
+        ScriptRepository.updateScriptLastExecuted(scriptId, System.currentTimeMillis())
+        ScriptRepository.updateScriptRunningState(scriptId, false)
     }
 
     suspend fun getScript(scriptId: String?): AutomationScript? =
@@ -324,19 +319,8 @@ class MainViewModel : ViewModel() {
     )
 
     private data class ParsedScriptMetadata(
-        val metadata: Map<String, String>,
+        val metadata: ScriptMetadata,
         val tags: List<String>
-    )
-
-    private val requiredMetadataKeys = listOf(
-        "id",
-        "name",
-        "description",
-        "author",
-        "version",
-        "targetApp",
-        "url",
-        "created"
     )
 
     private fun parseScriptMetadataOrThrow(code: String): ParsedScriptMetadata {
@@ -344,11 +328,11 @@ class MainViewModel : ViewModel() {
             throw IllegalArgumentException("Script must define droidRun(ctx)")
         }
         val metadata = ScriptMetadataParser.parse(code)
-        val missing = requiredMetadataKeys.filter { metadata[it].isNullOrBlank() }
+        val missing = metadata.missingRequired()
         if (missing.isNotEmpty()) {
             throw IllegalArgumentException("Missing metadata fields: ${missing.joinToString(", ")}")
         }
-        val tags = metadata["tags"]
+        val tags = metadata.tags
             ?.split(",")
             ?.map { it.trim() }
             ?.filter { it.isNotEmpty() }

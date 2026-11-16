@@ -70,7 +70,10 @@ object UIAutomatorEngine {
         AutomationAccessibilityService.enableTouchVisualization(true)
     }
 
-    suspend fun executeScript(script: AutomationScript): ScriptResult {
+    suspend fun executeScript(
+        script: AutomationScript,
+        intentPayload: Map<String, Any?>? = null
+    ): ScriptResult {
         val context = appContext ?: return ScriptResult("error", "Engine not initialized")
 
         if (!PermissionRepository.hasAccessibility(context)) {
@@ -123,7 +126,7 @@ object UIAutomatorEngine {
         executionJob = currentJob
 
         val result = try {
-            val scriptResult = executeScriptInternal(script, context)
+            val scriptResult = executeScriptInternal(script, context, intentPayload)
             scriptResult ?: ScriptResult("ok", "Script completed")
         } catch (e: kotlinx.coroutines.CancellationException) {
             log(LogLevel.INFO, "Script execution cancelled")
@@ -145,7 +148,8 @@ object UIAutomatorEngine {
     
     private suspend fun executeScriptInternal(
         script: AutomationScript,
-        context: Context
+        context: Context,
+        intentPayload: Map<String, Any?>? = null
     ): ScriptResult? = withContext(Dispatchers.Default) {
         var quickJs: QuickJs? = null
         try {
@@ -161,7 +165,8 @@ object UIAutomatorEngine {
             quickJs.installDroidWrightBindings(
                 engine = this@UIAutomatorEngine,
                 api = api,
-                appContext = context
+                appContext = context,
+                intentPayload = intentPayload
             )
             
             quickJs.set("__logBridge", QuickJsLogger::class.java, QuickJsLogger { message ->
@@ -327,14 +332,15 @@ object UIAutomatorEngine {
         if (metadata.isEmpty()) {
             return ""
         }
+        val jsValues = metadata.toJsValueMap()
         val declarations = StringBuilder()
         val usedNames = mutableSetOf<String>()
-        metadata.forEach { (key, value) ->
+        jsValues.forEach { (key, value) ->
             val identifier = sanitizeIdentifier(key, usedNames)
             val valueJson = gson.toJson(value)
             declarations.append("const $identifier = $valueJson;\n")
         }
-        val metadataJson = gson.toJson(metadata)
+        val metadataJson = gson.toJson(jsValues)
         return buildString {
             appendLine("const __droidMetadata = $metadataJson;")
             appendLine("if (typeof globalThis !== 'undefined') { globalThis.__droidMetadata = __droidMetadata; }")

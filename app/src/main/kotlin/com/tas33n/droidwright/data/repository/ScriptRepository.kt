@@ -178,7 +178,7 @@ object ScriptRepository {
     
     suspend fun updateScriptRunningState(id: String, isRunning: Boolean) = withContext(Dispatchers.IO) {
         val db = database ?: return@withContext
-        db.scriptDao().updateRunningState(id, isRunning)
+        db.scriptDao().updateRunningState(id, isRunning, System.currentTimeMillis())
     }
     
     suspend fun updateScriptLastExecuted(id: String, timestamp: Long) = withContext(Dispatchers.IO) {

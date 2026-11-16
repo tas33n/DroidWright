@@ -33,4 +33,15 @@
         <item name="colorError">@color/md_theme_dark_error</item>
         <item name="colorOnError">@color/md_theme_dark_onError</item>
     </style>
+
+    <!-- Translucent passthrough theme for the share sheet receiver activity,
+         so it can show a script chooser dialog without a visible app window. -->
+    <style name="Theme.UIAutomatorApp.ShareReceiver" parent="Theme.Material3.Light.Dialog">
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

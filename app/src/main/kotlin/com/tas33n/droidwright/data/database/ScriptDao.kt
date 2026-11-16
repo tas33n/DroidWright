@@ -37,10 +37,10 @@ interface ScriptDao {
     @Query("DELETE FROM scripts WHERE id = :id")
     suspend fun deleteScriptById(id: String)
     
-    @Query("UPDATE scripts SET isRunning = :isRunning WHERE id = :id")
-    suspend fun updateRunningState(id: String, isRunning: Boolean)
-    
-    @Query("UPDATE scripts SET lastExecuted = :timestamp WHERE id = :id")
+    @Query("UPDATE scripts SET isRunning = :isRunning, updatedAt = :timestamp WHERE id = :id")
+    suspend fun updateRunningState(id: String, isRunning: Boolean, timestamp: Long)
+
+    @Query("UPDATE scripts SET lastExecuted = :timestamp, updatedAt = :timestamp WHERE id = :id")
     suspend fun updateLastExecuted(id: String, timestamp: Long)
 }
 
