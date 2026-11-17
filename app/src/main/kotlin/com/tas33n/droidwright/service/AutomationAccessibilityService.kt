@@ -847,7 +847,7 @@ private class ToastOverlay(private val service: AutomationAccessibilityService) 
                 .alpha(0f)
                 .setDuration(180)
                 .withEndAction {
-                    view.visibility = View.GONE
+                    view.visibility = View.INVISIBLE
                 }
                 .start()
         }
